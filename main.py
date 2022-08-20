@@ -13,7 +13,7 @@ from PIL import Image, ImageTk
 from datetime import datetime
 
 # API AND THE MAIN REGIONS USED TO SEARCH, CAN STILL ADD BR:br1, LAN:la1, LAS:la2, OCE:oc1, RU:ru1, TR:tr1--------------
-API = "RGAPI-e6023fc2-1e36-472b-b710-f521cdcfb0e6"
+API = ""  # INSERT THE RIOT API KEY HERE--------------------------------------------------------------------------------
 regions = ['EUNE', 'EUW', 'NA', 'JP', 'KR']
 d_r = {'EUNE': 'eun1', "EUW": 'euw1', 'NA': 'na1', 'JP': 'jp1', 'KR': 'kr'}
 d_r2 = {'eun1': 'EUNE', 'euw1': "EUW", 'na1': 'NA', 'jp1': 'JP', 'kr': 'KR'}
