@@ -13,7 +13,7 @@ from PIL import Image, ImageTk
 from datetime import datetime
 
 # API AND THE MAIN REGIONS USED TO SEARCH, CAN STILL ADD BR:br1, LAN:la1, LAS:la2, OCE:oc1, RU:ru1, TR:tr1--------------
-API = ""  # INSERT THE RIOT API KEY HERE--------------------------------------------------------------------------------
+API = ""  # INSERT THE API KEY HERE
 regions = ['EUNE', 'EUW', 'NA', 'JP', 'KR']
 d_r = {'EUNE': 'eun1', "EUW": 'euw1', 'NA': 'na1', 'JP': 'jp1', 'KR': 'kr'}
 d_r2 = {'eun1': 'EUNE', 'euw1': "EUW", 'na1': 'NA', 'jp1': 'JP', 'kr': 'KR'}
@@ -23,12 +23,14 @@ internet_connection = socket.gethostbyname(socket.gethostname())
 # MAIN WINDOW ROOT AND CONFIG-------------------------------------------------------------------------------------------
 root = Tk()
 root.title("League Mastery")
-root.iconbitmap("chest.ico")
+root.iconbitmap("Images/mastery.ico")
 screen_width = root.winfo_screenwidth()
 screen_height = root.winfo_screenheight()
 app_width = 1000
-app_height = 750
-root.geometry(f'{app_width}x{app_height}+{(screen_width//2)-(app_width//2)}+{(screen_height//2)-(app_height//2)}')
+app_height = (screen_height - 300)
+bot_height = (app_height-150)
+friends_height = (app_height-48)
+root.geometry(f'{app_width}x{app_height+20}+{(screen_width//2)-(app_width//2)}+{(screen_height//2)-(app_height//2)-30}')
 root.resizable(False, False)
 
 
@@ -55,19 +57,19 @@ def startup_function():
         else:
             def confirm(*_):
                 # API REQUEST FOR THE CHAMPIONS NAME, CREATES A DICT WHICH IS INSERTED IN THE DATABASE------------------
-                url_champ_names = "http://ddragon.leagueoflegends.com/cdn/" + version + "/data/en_US/champion.json"
+                url_champ_names = f"http://ddragon.leagueoflegends.com/cdn/{version}/data/en_US/champion.json"
                 name_requests = requests.get(url_champ_names)
                 name = name_requests.json()
 
                 # API REQUEST FOR THE SUMMONER BASE INFO----------------------------------------------------------------
-                url_summoner_info = "https://"+sv_region.get()+".api.riotgames.com/lol/summoner/v4/summoners/by-name/" \
-                                    + e_start_name.get() + "?api_key=" + API
+                url_summoner_info = f"https://{d_r[sv_region.get()]}.api.riotgames.com/lol/summoner/v4/summoners/" \
+                                    f"by-name/{e_start_name.get()}?api_key={API}"
                 summoner_info_request = requests.get(url_summoner_info)
                 data = summoner_info_request.json()
 
                 # SUMMONER CHAMPIONS MASTERY, IS INSERTED IN THE DATABASE AS A STR WHICH IS CONVERTED BY EVAL LATER-----
-                url = f"https://{sv_region.get()}.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-" \
-                      f"summoner/{data['id']}?api_key={API}"
+                url = f"https://{d_r[sv_region.get()]}.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/" \
+                      f"by-summoner/{data['id']}?api_key={API}"
                 lol_request = requests.get(url)
                 data1 = lol_request.json()
 
@@ -100,7 +102,7 @@ def startup_function():
                         'id': data['id'],
                         'lvl': data['summonerLevel'],
                         'name': data['name'],
-                        'region': sv_region.get(),
+                        'region': d_r[sv_region.get()],
                         'bg': '#DCF7BA',
                         'bg2': '#79BF8B',
                         'bt': '#CCFFFF',
@@ -114,7 +116,7 @@ def startup_function():
                         })
                     cur1.execute("INSERT INTO data VALUES(:data)", {'data': f'{data1}'})
                     cur1.executemany("INSERT INTO theme VALUES (?, ?, ?, ?, ?);", [
-                                    ('Default', '#DCF7BA', '#79BF8B', '#CCFFFF', '#000000'),
+                                    ('Default', '#DCF7BA', '#79BF8B', '#81E9E6', '#000000'),
                                     ('Light', '#EEEEEE', '#BDBDBD', '#66B2FF', '#000000'),
                                     ('Dark', '#222831', '#393E46', '#00ADB5', '#EEEEEE'),
                                     ('Gray', '#AAB7B8', '#85929E', '#ABEBC6', '#000000'),
@@ -131,6 +133,7 @@ def startup_function():
             top_width = 350
             top_height = 100
             top = Toplevel(root)
+            top.protocol("WM_DELETE_WINDOW", root.quit)
             top.geometry(f'{top_width}x{top_height}+{(screen_width // 2) - (top_width // 2)}+'
                          f'{(screen_height // 2) - (top_height // 2)}')
             top.attributes('-topmost', 'true')
@@ -141,7 +144,7 @@ def startup_function():
             e_start_name.grid(row=0, column=3, columnspan=4, sticky='w')
             e_start_name.bind('<Return>', confirm)
             sv_region = StringVar()
-            om_region = ttk.OptionMenu(top, sv_region, 'eun1', 'eun1', 'euw1', 'na1', 'jp1', 'kr')
+            om_region = ttk.OptionMenu(top, sv_region, 'EUNE', *regions)
             om_region.grid(row=0, column=2, sticky='e')
             bt_confirm = Button(top, text='Confirm', command=confirm)
             bt_confirm.place(x=120, y=50)
@@ -240,16 +243,16 @@ class Mastery:
         self.bt_search.grid(row=0, column=6)
 
         # BUTTON TO CHANGE THE DEFAULT SUMMONER AND THE FRIEND BUTTON TO SEE, ADD AND DELETE FRIENDS--------------------
-        photo = PhotoImage(file=f"user.png")
+        photo = PhotoImage(file=f"Images/user.png")
         self.bt_friend = Button(self.f_top, image=photo, height=26, width=30, command=self.friends, bg=self.bt)
         self.bt_friend.grid(row=0, column=7, padx=10, sticky="w")
         self.bt_friend.image = photo
-        self.bt_change = Button(self.f_top, text='♻', font=('Arial', 10), command=self.change, width=3, bg=self.bt)
+        self.bt_change = Button(self.f_top, text='♻', font=('Arial', 10), command=self.default, width=3, bg=self.bt)
         self.bt_change.grid(row=0, column=7, ipady=2, padx=10, sticky="e")
         self.check_status = True
 
         # BOT FRAME WHICH IS USED TO HOLD 4 FRAMES FOR THE CHAMPIONS INFO-----------------------------------------------
-        self.f_bot = Frame(root, width=app_width, height=600, bg=self.bg)
+        self.f_bot = Frame(root, width=app_width, height=bot_height, bg=self.bg)
         self.f_bot.grid(row=1, column=0, columnspan=4)
         self.f_bot.grid_propagate(False)
 
@@ -258,6 +261,7 @@ class Mastery:
         self.points = []
         self.chest = []
         self.token = []
+        self.level_check = []
         self.labels = None
         self.f_c = None
         self.f_f = None
@@ -313,8 +317,8 @@ class Mastery:
         data = lol_request.json()
         cur.execute("UPDATE data SET data = :data", {'data': str(data)})
 
-        url_info = f"https://{fetch[0][3]}.api.riotgames.com/lol/summoner/v4/summoners/by-name/" \
-                   f"{fetch[0][2]}?api_key={API}"
+        url_info = f"https://{fetch[0][3]}.api.riotgames.com/lol/summoner/v4/summoners/by-name/{fetch[0][2]}?api_key=" \
+                   f"{API}"
         summoner_info_request = requests.get(url_info)
         info = summoner_info_request.json()
         cur.execute("UPDATE start SET lvl = :lvl, name = :name", {'lvl': info['summonerLevel'], 'name': info['name']})
@@ -354,6 +358,10 @@ class Mastery:
 
         def add_new():
 
+            def on_closing():
+                bt_add.config(state='normal')
+                top.destroy()
+
             def pick(label):
                 choose = colorchooser.askcolor()
                 label.config(text=choose[1], bg=choose[1])
@@ -387,6 +395,7 @@ class Mastery:
                 except sqlite3.IntegrityError:
                     l_error.config(text='Name already exists')
 
+            bt_add.config(state='disabled')
             top_width2 = 250
             top_height2 = 200
             top = Toplevel(root, bg=self.bg)
@@ -402,15 +411,16 @@ class Mastery:
             for i2 in colors:
                 colors[row2] = Label(top, bg='#AAB7B8', text='#AAB7B8', width=15, bd=0)
                 colors[row2].grid(row=row2, column=0, padx=10, ipady=2)
-                button = Button(top, text=i2, bg=self.bt, fg=self.fg, command=lambda n=colors[row2]: pick(n), width=13)
-                button.grid(row=row2, column=1, pady=2)
+                i2 = Button(top, text=i2, bg=self.bt, fg=self.fg, command=lambda n=colors[row2]: pick(n), width=13)
+                i2.grid(row=row2, column=1, pady=2)
                 row2 += 1
             e_name = Entry(top, width=15, bg=self.bg2, fg=self.fg, justify=RIGHT)
             e_name.grid(row=4, column=0, ipady=3)
-            bt_confirm = Button(top, text='click', command=change, width=13, bg=self.bt, fg=self.fg)
+            bt_confirm = Button(top, text='Confirm', command=change, width=13, bg=self.bt, fg=self.fg)
             bt_confirm.grid(row=4, column=1, pady=10)
             l_error = Label(top, fg=self.fg, bg=self.bg)
             l_error.grid(row=5, column=0, columnspan=10)
+            top.protocol("WM_DELETE_WINDOW", on_closing)
 
         def delete(name):
             ask = messagebox.askyesno("Delete", f"Delete theme {name}", parent=top_main)
@@ -465,13 +475,13 @@ class Mastery:
         for i in info[4:]:
             theme_name = Button(top_main, text=i[0], bg=self.bg, fg=self.fg, bd=0, command=lambda n=i[0]: delete(n))
             theme_name.grid(row=row, column=0, columnspan=4, pady=1, sticky='e')
-            color_bg = Label(top_main, bg=i[1], width=3, height=1)
+            color_bg = Label(top_main, bg=i[1], width=3, height=1, borderwidth=3, relief="groove")
             color_bg.grid(row=row, column=4, columnspan=4, pady=1)
-            color_bg2 = Label(top_main, bg=i[2], width=3, height=1)
+            color_bg2 = Label(top_main, bg=i[2], width=3, height=1, borderwidth=3, relief="groove")
             color_bg2.grid(row=row, column=8, columnspan=4, pady=1)
-            color_bt = Label(top_main, bg=i[3], width=3, height=1)
+            color_bt = Label(top_main, bg=i[3], width=3, height=1, borderwidth=3, relief="groove")
             color_bt.grid(row=row, column=12, columnspan=4, pady=1)
-            color_fg = Label(top_main, bg=i[4], width=3, height=1)
+            color_fg = Label(top_main, bg=i[4], width=3, height=1, borderwidth=3, relief="groove")
             color_fg.grid(row=row, column=16, columnspan=4, pady=1)
             row += 1
         conn2.commit()
@@ -483,7 +493,7 @@ class Mastery:
         p_name = 7
         # TOP FRAMES AND PHOTOS-----------------------------------------------------------------------------------------
         for i in range(4):
-            img = Image.open(f"lvl{p_name}.png")
+            img = Image.open(f"Images/lvl{p_name}.png")
             img = img.resize((248, 100))
             photo7 = ImageTk.PhotoImage(img)
             self.labels = Label(self.f_top, image=photo7, bg=self.bg2)
@@ -518,6 +528,8 @@ class Mastery:
             o.config(bg=bg)
         for t in self.token:
             t.config(bg=bg, fg=fg)
+        for lc in self.level_check:
+            lc.config(bg=bg, fg=bt)
         self.f_top.config(bg=bg)
         self.l_name.config(bg=bg, fg=fg)
         self.bt_status.config(bg=bg)
@@ -603,7 +615,7 @@ class Mastery:
                 icon = Button(f_bot, image=photo, bg=self.bg2)
                 icon.image = photo
 
-                img2 = Image.open(f"add.png")
+                img2 = Image.open(f"Images/add.png")
                 img2 = img2.resize((25, 25))
                 photo2 = ImageTk.PhotoImage(img2)
                 add = Button(f_bot, image=photo2, bg=self.bg, bd=0,
@@ -635,12 +647,32 @@ class Mastery:
 
         if self.check_status:
             self.check_status = False
-            root.geometry('1200x730')
+            root.geometry(f'{app_width+200}x{app_height}')
+
+            def scroll(widget, event):
+                widget.yview_scroll(int(-1 * (event.delta / 120)), "units")
+
+            def final_scroll(widget, func, *_):
+                widget.bind_all("<MouseWheel>", func)
+
+            def stop_scroll(widget, *_):
+                widget.unbind_all("<MouseWheel>")
 
             def friends_list():
-                f_friends = Frame(friend_list, width=top_width, height=650, bg=self.bg)
+                f_friends = Frame(friend_list, width=178, height=friends_height, bg=self.bg)
                 f_friends.grid(row=2, column=0, sticky='nsew')
                 f_friends.grid_propagate(False)
+
+                c_friend = Canvas(f_friends, width=178, height=friends_height, bg=self.bg)
+                c_friend.pack(side=LEFT, fill=BOTH, expand=1)
+                s_friend = Scrollbar(f_friends, orient=VERTICAL, command=c_friend.yview, bg=self.bg)
+                s_friend.pack(side=RIGHT, fill=Y)
+                c_friend.configure(yscrollcommand=s_friend.set)
+                c_friend.bind('<Configure>', lambda event: c_friend.configure(scrollregion=c_friend.bbox('all')))
+                ff_friends = Frame(c_friend, bg=self.bg)
+                c_friend.create_window((0, 0), window=ff_friends, anchor='nw')
+                c_friend.bind("<Enter>", lambda e: final_scroll(c_friend, lambda event: scroll(c_friend, event), e))
+                c_friend.bind("<Leave>", lambda e: stop_scroll(c_friend, e))
 
                 conn1 = sqlite3.connect('Default Name.db')
                 cur1 = conn1.cursor()
@@ -648,7 +680,7 @@ class Mastery:
                 info = cur1.fetchall()
 
                 for i in info:
-                    bt_friends = Button(f_friends, text=f'{i[0]} -{d_r2[i[1]]}', bg=self.bt, fg=self.fg,
+                    bt_friends = Button(ff_friends, text=f'{i[0]} -{d_r2[i[1]]}', bg=self.bt, fg=self.fg,
                                         command=lambda n=i[0], m=i[1]: self.search(n, m))
                     bt_friends.pack(pady=5, padx=5, anchor="w")
 
@@ -657,8 +689,8 @@ class Mastery:
                 friend_list.config(bg=self.bg)
 
                 def confirm(*_):
-                    url_info = "https://"+d_r[sv_region.get()]+".api.riotgames.com/lol/summoner/v4/summoners/by-name/"\
-                               + e_start_name.get() + "?api_key=" + API
+                    url_info = f"https://{d_r[sv_region.get()]}.api.riotgames.com/lol/summoner/v4/summoners/by-name/" \
+                               f"{e_start_name.get()}?api_key={API}"
                     summoner_info_request = requests.get(url_info)
                     data = summoner_info_request.json()
                     if summoner_info_request.status_code == 200:
@@ -737,11 +769,10 @@ class Mastery:
                     bt_del.pack(pady=5, padx=5, anchor="w")
 
             top_width = 200
-            top_height = 750
-            friend_list = Frame(root, height=top_height, width=top_width, bg=self.bg)
+            friend_list = Frame(root, height=app_height, width=top_width, bg=self.bg)
             friend_list.grid(row=0, column=4, columnspan=1, rowspan=2, sticky='n')
             friend_list.grid_propagate(False)
-            f_button = Frame(friend_list, width=top_width, height=52, bg=self.bg2)
+            f_button = Frame(friend_list, width=top_width, height=48, bg=self.bg2)
             f_button.grid(row=0, column=0)
             f_button.grid_propagate(False)
             bt_add = Button(f_button, text='Add', font=(self.f, 10), width=8, command=add, bg=self.bt, fg=self.fg)
@@ -752,10 +783,10 @@ class Mastery:
             friends_list()
         else:
             self.check_status = True
-            root.geometry('1000x730')
+            root.geometry(f'1000x{app_height}')
 
     # FUNCTION TO CHANGE THE DEFAULT SUMMONER NAME----------------------------------------------------------------------
-    def change(self):
+    def default(self):
         # CHECKS IF THE SUMMONER NAME ENTERED IS VALID------------------------------------------------------------------
         def confirm(*_):
             url_summoner_info = f"https://{d_r[sv_region.get()]}.api.riotgames.com/lol/summoner/v4/summoners/by-name/" \
@@ -830,10 +861,10 @@ class Mastery:
                 self.request_data(info[0][0])
                 conn.commit()
                 conn.close()
-
+                th.Thread(target=self.update_data).start()
             else:
-                url_summoner_name = "https://" + region + ".api.riotgames.com/lol/summoner/v4/summoners/by-name/" \
-                                    + name + "?api_key=" + API
+                url_summoner_name = f"https://{region}.api.riotgames.com/lol/summoner/v4/summoners/by-name/{name}" \
+                                    f"?api_key={API}"
                 summoner_name_request = requests.get(url_summoner_name)
                 summoner_info = summoner_name_request.json()
                 self.e_search.delete(0, END)
@@ -842,8 +873,8 @@ class Mastery:
                 self.l_level.config(text=f"Level: {summoner_info['summonerLevel']}")
                 self.region = region
                 self.sv_region.set(d_r2[region])
-                url = "https://"+region+".api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-summoner/" \
-                      + self.summoner_id + "?api_key=" + API
+                url = f"https://{region}.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-summoner/" \
+                      f"{self.summoner_id}?api_key={API}"
                 lol_request = requests.get(url)
                 data = lol_request.json()
                 self.request_data(str(data))
@@ -870,11 +901,25 @@ class Mastery:
         f_o = ['f_one', 'f_two', 'f_three', 'f_four']
         self.f_c = ['c_one', 'c_two', 'c_three', 'c_four']
         self.f_f = ['fs_one', 'fs_two', 'fs_three', 'fs_four']
+
+        '''def set_mousewheel(widgets, command):
+            widgets.bind("<Enter>", lambda event: widgets.bind('<MouseWheel>', command))
+            widgets.bind("<Leave>", lambda event: widgets.unbind('<MouseWheel>'))'''
+
+        def scroll(widget, event):
+            widget.yview_scroll(int(-1 * (event.delta / 120)), "units")
+
+        def final_scroll(widget, func, *_):
+            widget.bind_all("<MouseWheel>", func)
+
+        def stop_scroll(widget, *_):
+            widget.unbind_all("<MouseWheel>")
+
         for f in range(4):
-            f_o[f] = Frame(self.f_bot, width=250, height=600, bg=self.bg)
+            f_o[f] = Frame(self.f_bot, width=250, height=bot_height, bg=self.bg)
             f_o[f].grid(row=1, column=f)
             f_o[f].grid_propagate(False)
-            self.f_c[f] = Canvas(f_o[f], width=229, height=600, bg=self.bg)
+            self.f_c[f] = Canvas(f_o[f], width=229, height=bot_height, bg=self.bg)
             self.f_c[f].pack(side=LEFT, fill=BOTH, expand=1)
             f_s[f] = Scrollbar(f_o[f], orient=VERTICAL, command=self.f_c[f].yview, bg=self.bg)
             f_s[f].pack(side=RIGHT, fill=Y)
@@ -882,6 +927,12 @@ class Mastery:
             self.f_c[f].bind('<Configure>', lambda event: event.widget.configure(scrollregion=event.widget.bbox('all')))
             self.f_f[f] = Frame(self.f_c[f], bg=self.bg)
             self.f_c[f].create_window((0, 0), window=self.f_f[f], anchor='nw')
+            self.f_c[f].bind("<Enter>", lambda e: final_scroll(e.widget, lambda event: scroll(e.widget, event), e))
+            self.f_c[f].bind("<Leave>", lambda e: stop_scroll(e.widget, e))
+
+            # set_mousewheel(self.f_f[f], lambda e: e.widget.master.yview_scroll(-1 * (e.delta // 120), "units"))
+            # self.f_f[f].bind('<MouseWheel>', lambda e: e.widget.master.yview_scroll(-1 * (e.delta // 120), "units"))
+            # self.f_f[f].bind("<Leave>", lambda event: event.widget.master.unbind_all('<MouseWheel>'))
 
         # API TO CONVERT THE CHAMPION ID TO NAME------------------------------------------------------------------------
         # Issue with link, had to change it with the other url
@@ -895,35 +946,52 @@ class Mastery:
                   4: self.f_f[3], 3: self.f_f[3], 2: self.f_f[3], 1: self.f_f[3]}
         count = {7: 1, 6: 1, 5: 1, 4: 1, 3: 1, 2: 1, 1: 1}
         c = t = v = 0
+        lc = 0
 
         # FOR LOOP TO CREATE THE LABELS WITH THE CHAMPIONS INFO---------------------------------------------------------
         self.name.clear()
         self.points.clear()
         self.chest.clear()
         self.token.clear()
+        self.level_check.clear()
+        check = [True, True, True]
         for i in data:
             name = self.dicts[i["championId"]]
             frame = frames[i["championLevel"]]
             lvl = i["championLevel"]
+            if lvl <= 3 and check[(lvl-1)]:
+                self.level_check.append(lvl)
+                self.level_check[lc] = Label(frame, text=f'Level {lvl}', bg=self.bg, fg=self.bt, font=(self.f, 16))
+                self.level_check[lc].grid(row=row, column=0, sticky="W")
+                check[(lvl-1)] = False
+                row += 1
+                lc += 1
+
             self.name.append(self.dicts[(i["championId"])])
             self.points.append(i["championPoints"])
             self.name[c] = Label(frame, text=f'{count[lvl]}: {name}', bg=self.bg, fg=self.fg, font=(self.f, 10))
             self.name[c].grid(row=row, column=0, sticky="W")
             count[lvl] += 1
-            self.points[c] = Label(frame, text=f'--{i["championPoints"]}', bg=self.bg, fg=self.fg, font=(self.f, 10))
+            self.points[c] = Label(frame, text=f'--{i["championPoints"]}', bg=self.bg, fg=self.fg, font=(self.f, 8))
             self.points[c].grid(row=row, column=1, sticky="W")
             column = 3
             c += 1
 
             for t1 in range(i["tokensEarned"]):
                 self.token.append(1)
-                self.token[t] = Label(frame, text='🗸', font=(self.f, 10), bg=self.bg, fg=self.fg)
+                token = PhotoImage
+                if lvl == 5:
+                    token = PhotoImage(file="Images/token6.png")
+                elif lvl == 6:
+                    token = PhotoImage(file="Images/token7.png")
+                self.token[t] = Label(frame, image=token, bg=self.bg, fg=self.fg)
+                self.token[t].image = token
                 self.token[t].grid(row=row, column=column)
                 column += 1
                 t += 1
             if i["chestGranted"]:
                 self.chest.append(1)
-                photo = PhotoImage(file=f"chest2.png")
+                photo = PhotoImage(file=f"Images/chest2.png")
                 self.chest[v] = Label(frame, image=photo, bg=self.bg, fg=self.fg)
                 self.chest[v].image = photo
                 self.chest[v].grid(row=row, column=2)
