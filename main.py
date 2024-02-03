@@ -83,7 +83,7 @@ def startup_function():
 
                     # SUMMONER CHAMPIONS MASTERY, IS INSERTED IN THE DATABASE AS A STR WHICH IS CONVERTED BY EVAL LATER-
                     url = f"https://{d_r[sv_region.get()]}.api.riotgames.com/lol/champion-mastery/v4/champion-" \
-                          f"masteries/by-summoner/{data['id']}?api_key={API}"
+                          f"masteries/by-puuid/{data['id']}?api_key={API}"
                     lol_request = requests.get(url)
                     data1 = lol_request.json()
 
@@ -114,7 +114,7 @@ def startup_function():
                         UNIQUE(theme_name))""")
                         cur1.execute("INSERT INTO start VALUES(:id, :lvl, :name, :region, :bg, :bg2, :bt, :fg, "
                                      ":version)", {
-                                                 'id': data['id'],
+                                                 'id': data['puuid'],
                                                  'lvl': data['summonerLevel'],
                                                  'name': data['name'],
                                                  'region': d_r[sv_region.get()],
@@ -255,7 +255,6 @@ class Mastery:
         self.l_level = Label(self.f_top, text=f"Level: {self.lvl}", font=(self.f, 14, "italic"), bg=self.bg, fg=self.fg)
         self.l_level.grid(row=0, column=2)
         self.filter = Entry(self.f_top, font=(self.f, 11), justify=RIGHT, bg=self.bg2, fg=self.fg, width=12)
-        # self.filter.grid(row=0, column=3, pady=10, ipady=2)
 
         # OPTION MENU TO SELECT THE REGION, THE ENTRY AND BUTTON TO SEARCH A PLAYER, ENTER IS BIND ON THE ENTRY---------
         self.sv_region = StringVar()
@@ -386,7 +385,7 @@ class Mastery:
 
     # IS CALLED ON THE REQUEST DATA TO CHECK IF A PLAYER IS IN GAME, RED CIRCLE APPEARS NEAR THE NAME-------------------
     def game_status(self):
-        url_status = "https://" + self.region + ".api.riotgames.com/lol/spectator/v4/active-games/by-summoner/" + \
+        url_status = "https://" + self.region + ".api.riotgames.com/lol/spectator/v4/active-games/by-puuid/" + \
                      self.summoner_id + "?api_key=" + API
         game_status = requests.get(url_status)
 
@@ -402,7 +401,7 @@ class Mastery:
         cur.execute("""SELECT * FROM start""")
         fetch = cur.fetchall()
 
-        url_data = f"https://{self.region}.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-summoner/" \
+        url_data = f"https://{self.region}.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-puuid/" \
                    f"{fetch[0][0]}?api_key={API}"
         lol_request = requests.get(url_data)
         data = lol_request.json()
@@ -911,7 +910,7 @@ class Mastery:
     # FUNCTION TO CHECK THE PLAYERS IN-GAME AND THE CHAMPS PICKED, APPEARS THE CIRCLE NEAR THE NAME---------------------
     def status(self):
         # URL TO CHECK IF THERE IS AN ACTIVE GAME FOR A SEARCHED PLAYER-------------------------------------------------
-        url_game = f"https://{self.region}.api.riotgames.com/lol/spectator/v4/active-games/by-summoner/" \
+        url_game = f"https://{self.region}.api.riotgames.com/lol/spectator/v4/active-games/by-puuid/" \
                    f"{self.summoner_id}?api_key={API}"
         game_data = requests.get(url_game)
         info = game_data.json()
@@ -949,7 +948,7 @@ class Mastery:
             # TOPLEVEL WINDOWS FOR THE DISPLAY OF THE GAME TIME AND THE PLAYERS NAME AND CHAMP--------------------------
             def check_running():
                 try:
-                    url_game2 = f"https://{self.region}.api.riotgames.com/lol/spectator/v4/active-games/by-summoner/" \
+                    url_game2 = f"https://{self.region}.api.riotgames.com/lol/spectator/v4/active-games/by-puuid/" \
                                f"{self.summoner_id}?api_key={API}"
                     game_data2 = requests.get(url_game2)
                     if game_data2.status_code == 200 and f_live.winfo_viewable() and os.path.exists(lol_path):
@@ -1304,7 +1303,7 @@ class Mastery:
             # IF THE SEARCHED SUMMONER EXISTS IT INSERTS THE INFO ON THE DATABASE---------------------------------------
             if summoner_info_request.status_code == 200:
                 url_mastery = f"https://{d_r[sv_region.get()]}.api.riotgames.com/lol/champion-mastery/v4/champion-" \
-                              f"masteries/by-summoner/{info['id']}?api_key={API}"
+                              f"masteries/by-puuid/{info['id']}?api_key={API}"
                 lol_request = requests.get(url_mastery)
                 data = lol_request.json()
                 conn1 = sqlite3.connect('Default Name.db')
@@ -1393,11 +1392,11 @@ class Mastery:
                 summoner_name_request = requests.get(url_summoner_name)
                 summoner_info = summoner_name_request.json()
                 self.e_search.delete(0, END)
-                self.summoner_id = summoner_info["id"]
+                self.summoner_id = summoner_info["puuid"]
                 self.l_level.config(text=f"Level: {summoner_info['summonerLevel']}")
                 self.region = region
                 self.sv_region.set(d_r2[region])
-                url = f"https://{region}.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-summoner/" \
+                url = f"https://{region}.api.riotgames.com/lol/champion-mastery/v4/champion-masteries/by-puuid/" \
                       f"{self.summoner_id}?api_key={API}"
                 lol_request = requests.get(url)
                 data = lol_request.json()
